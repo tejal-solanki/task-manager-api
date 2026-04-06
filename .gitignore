@@ -1,0 +1,15 @@
+# Maven
+target/
+*.class
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Environment
+.env
+application-prod.properties
+
+# Mac
+.DS_Store
