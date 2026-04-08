@@ -6,6 +6,4 @@ public class TaskNotFoundException extends RuntimeException {
         super(exception);
     }
 
-   
-
 }
