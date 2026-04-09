@@ -1,11 +1,11 @@
 package com.example.demo;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -26,8 +26,10 @@ public class TaskManagerController {
     }
 
     @GetMapping
-    public List<TaskManager> getAllTask() {
-        return taskManagerService.getAllTask();
+    public Page<TaskManager> getAllTask(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return taskManagerService.getAllTask(page, size);
     }
 
     @GetMapping("/{id}")
@@ -45,8 +47,13 @@ public class TaskManagerController {
         taskManagerService.deleteTask(id);
     }
 
-    @PutMapping("/{id}/status")
-    public TaskManager updateTaskStatus(@PathVariable("id") Long id, @RequestParam TaskStatus status) {
-        return taskManagerService.setStatus(status, id);
+    @PutMapping("/{id}")
+    public TaskManager updateTask(@PathVariable("id") Long id, @RequestBody TaskManager updatedTask) {
+        return taskManagerService.updateTask(id, updatedTask);
+    }
+
+    @PatchMapping("/{id}")
+    public TaskManager partialUpdateTask(@PathVariable("id") Long id, @RequestBody TaskManager partialUpdatedTask) {
+        return taskManagerService.partialUpdateTask(id, partialUpdatedTask);
     }
 }

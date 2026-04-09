@@ -1,8 +1,8 @@
 package com.example.demo;
 
-import java.util.List;
-import java.util.Objects;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -14,8 +14,9 @@ public class TaskManagerService {
         this.taskManagerRepository = taskManagerRepository;
     }
 
-    public List<TaskManager> getAllTask() {
-        return taskManagerRepository.findAll();
+    public Page<TaskManager> getAllTask(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return taskManagerRepository.findAll(pageable);
     }
 
     public TaskManager addNewTask(TaskManager taskManager) {
@@ -27,18 +28,35 @@ public class TaskManagerService {
                 .orElseThrow(() -> new TaskNotFoundException("Task with id " + id + " not found"));
     }
 
-    public TaskManager setStatus(TaskStatus status, Long id) {
-        TaskManager task = taskManagerRepository.findById(id)
-                .orElseThrow(() -> new TaskNotFoundException("Status with id " + id + " not found"));
-        ;
-        if (status != null && !Objects.equals(task.getStatus(), status)) {
-            task.setStatus(status);
-        }
-        return taskManagerRepository.save(task);
-    }
-
     public void deleteTask(Long id) {
         taskManagerRepository.deleteById(id);
     }
 
+    public TaskManager updateTask(Long id, TaskManager updatedTask) {
+        TaskManager task = taskManagerRepository.findById(id)
+                .orElseThrow(() -> new TaskNotFoundException("Task with id " + id + " is not found"));
+
+        task.setTitle(updatedTask.getTitle());
+        task.setStatus(updatedTask.getStatus());
+        task.setCreatedAt(updatedTask.getCreatedAt());
+        task.setDescription(updatedTask.getDescription());
+
+        return taskManagerRepository.save(task);
+    }
+
+    public TaskManager partialUpdateTask(Long id, TaskManager updatedTask) {
+        TaskManager task = taskManagerRepository.findById(id)
+                .orElseThrow(() -> new TaskNotFoundException("Task with id " + id + " is not found"));
+
+        if (updatedTask.getTitle() != null)
+            task.setTitle(updatedTask.getTitle());
+        if (updatedTask.getStatus() != null)
+            task.setStatus(updatedTask.getStatus());
+        if (updatedTask.getCreatedAt() != null)
+            task.setCreatedAt(updatedTask.getCreatedAt());
+        if (updatedTask.getDescription() != null)
+            task.setDescription(updatedTask.getDescription());
+
+        return taskManagerRepository.save(task);
+    }
 }
