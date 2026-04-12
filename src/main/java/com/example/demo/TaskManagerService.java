@@ -9,9 +9,11 @@ import org.springframework.stereotype.Service;
 public class TaskManagerService {
 
     private final TaskManagerRepository taskManagerRepository;
+    private final TaskMessagePublisher taskMessagePublisher;
 
-    public TaskManagerService(TaskManagerRepository taskManagerRepository) {
+    public TaskManagerService(TaskManagerRepository taskManagerRepository, TaskMessagePublisher taskMessagePublisher) {
         this.taskManagerRepository = taskManagerRepository;
+        this.taskMessagePublisher = taskMessagePublisher;
     }
 
     public Page<TaskManager> getAllTask(int page, int size) {
@@ -20,7 +22,9 @@ public class TaskManagerService {
     }
 
     public TaskManager addNewTask(TaskManager taskManager) {
-        return taskManagerRepository.save(taskManager);
+        TaskManager saved = taskManagerRepository.save(taskManager);
+        taskMessagePublisher.publishTaskCreated("Task created: " + saved.getTitle());
+        return saved;
     }
 
     public TaskManager getTaskById(Long id) {
