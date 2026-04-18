@@ -40,7 +40,7 @@ class TaskManagerControllerTest {
     @Test
     @WithMockUser
     void createTask_shouldReturn201() throws Exception {
-        TaskManager task = new TaskManager("Test", "Desc", TaskStatus.TODO, LocalDate.now());
+        TaskManager task = new TaskManager("Test", "Desc", TaskStatus.TODO, LocalDate.now(),LocalDate.now().plusDays(3));
 
         mockMvc.perform(post("/task")
                 .contentType(MediaType.APPLICATION_JSON)

@@ -22,16 +22,18 @@ public class TaskManager {
     @Enumerated(EnumType.STRING)
     private TaskStatus status;
     private LocalDate createdAt;
+    private LocalDate dueDate;
 
     private TaskManager() {
 
     }
 
-    public TaskManager(String title, String description, TaskStatus status, LocalDate createdAt) {
+    public TaskManager(String title, String description, TaskStatus status, LocalDate createdAt, LocalDate dueDate) {
         this.title = title;
         this.description = description;
         this.status = status;
         this.createdAt = createdAt;
+        this.dueDate = dueDate;
     }
 
     public Long getId() {
@@ -72,6 +74,14 @@ public class TaskManager {
 
     public void setCreatedAt(LocalDate createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public LocalDate getDueDate() {
+        return dueDate;
+    }
+
+    public void setDueDate(LocalDate dueDate) {
+        this.dueDate = dueDate;
     }
 
 }

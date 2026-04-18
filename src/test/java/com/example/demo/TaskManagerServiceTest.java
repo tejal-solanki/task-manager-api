@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
@@ -25,7 +26,7 @@ class TaskManagerServiceTest {
 
     @Test
     void addNewTask_shouldSaveAndReturnTask() {
-        TaskManager input = new TaskManager("Test task", "Desc", TaskStatus.TODO, LocalDate.now());
+        TaskManager input = new TaskManager("Test task", "Desc", TaskStatus.TODO, LocalDate.now(), LocalDate.now().plusDays(3));
         when(taskManagerRepository.save(input)).thenReturn(input);
 
         TaskManager result = taskManagerService.addNewTask(input);

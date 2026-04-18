@@ -14,9 +14,19 @@ public class RabbitMQConfig {
     public static final String EXCHANGE = "task.exchange";
     public static final String ROUTING_KEY = "task.created";
 
+    // NEW
+    public static final String DUE_QUEUE = "due.notification.queue";
+    public static final String DUE_ROUTING_KEY = "task.due";
+
     @Bean
     public Queue taskQueue() {
-        return new Queue(QUEUE, true); // true = durable, survives restart
+        return new Queue(QUEUE, true);
+    }
+
+    // NEW
+    @Bean
+    public Queue dueNotificationQueue() {
+        return new Queue(DUE_QUEUE, true);
     }
 
     @Bean
@@ -30,5 +40,14 @@ public class RabbitMQConfig {
                 .bind(taskQueue)
                 .to(taskExchange)
                 .with(ROUTING_KEY);
+    }
+
+    // NEW
+    @Bean
+    public Binding dueBinding(Queue dueNotificationQueue, DirectExchange taskExchange) {
+        return BindingBuilder
+                .bind(dueNotificationQueue)
+                .to(taskExchange)
+                .with(DUE_ROUTING_KEY);
     }
 }

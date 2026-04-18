@@ -1,5 +1,6 @@
 package com.example.demo;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -56,4 +57,13 @@ public class TaskManagerController {
     public TaskManager partialUpdateTask(@PathVariable("id") Long id, @RequestBody TaskManager partialUpdatedTask) {
         return taskManagerService.partialUpdateTask(id, partialUpdatedTask);
     }
+
+    @Autowired
+private DueTaskScheduler dueTaskScheduler;
+
+@GetMapping("/test/trigger-due-check")
+public ResponseEntity<String> triggerDueCheck() {
+    dueTaskScheduler.checkDueTasks();
+    return ResponseEntity.ok("Scheduler triggered");
+}
 }
