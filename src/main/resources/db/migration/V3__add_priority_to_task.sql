@@ -1,0 +1,2 @@
+ALTER TABLE task_manager
+ADD COLUMN priority VARCHAR(50) DEFAULT 'MEDIUM';

@@ -59,11 +59,11 @@ public class TaskManagerController {
     }
 
     @Autowired
-private DueTaskScheduler dueTaskScheduler;
+    private DueTaskScheduler dueTaskScheduler;
 
-@GetMapping("/test/trigger-due-check")
-public ResponseEntity<String> triggerDueCheck() {
-    dueTaskScheduler.checkDueTasks();
-    return ResponseEntity.ok("Scheduler triggered");
-}
+    @GetMapping("/test/trigger-due-check")
+    public ResponseEntity<String> triggerDueCheck() {
+        dueTaskScheduler.checkDueTasks();
+        return ResponseEntity.ok("Scheduler triggered");
+    }
 }
