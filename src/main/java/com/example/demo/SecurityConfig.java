@@ -56,10 +56,11 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/ws/**").permitAll()
-                       .requestMatchers("/task/test/**").permitAll()
-                        .anyRequest().authenticated())
+    .requestMatchers("/auth/**").permitAll()
+    .requestMatchers("/ws/**").permitAll()
+    .requestMatchers("/task/test/**").permitAll()
+    .requestMatchers("/actuator/**").permitAll()
+    .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter,
                         UsernamePasswordAuthenticationFilter.class);
 

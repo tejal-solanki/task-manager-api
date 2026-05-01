@@ -20,4 +20,12 @@ public class TaskMessagePublisher {
         );
         System.out.println("Published to RabbitMQ: " + message);
     }
+    public void publishUrgentTask(String message) {
+    rabbitTemplate.convertAndSend(
+            RabbitMQConfig.EXCHANGE,
+            RabbitMQConfig.DUE_ROUTING_KEY,  // reuse the due notification queue for urgents
+            message
+    );
+    System.out.println("[AI] Published urgent task to RabbitMQ: " + message);
+}
 }

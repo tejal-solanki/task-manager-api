@@ -23,6 +23,7 @@ public class TaskManager {
     private TaskStatus status;
     private LocalDate createdAt;
     private LocalDate dueDate;
+    private String priority;
 
     private TaskManager() {
 
@@ -82,6 +83,13 @@ public class TaskManager {
 
     public void setDueDate(LocalDate dueDate) {
         this.dueDate = dueDate;
+    }
+    public String getPriority() {
+        return priority;
+    }
+
+    public void setPriority(String priority) {
+        this.priority = priority;
     }
 
 }

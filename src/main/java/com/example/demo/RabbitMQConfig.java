@@ -4,6 +4,7 @@ import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -17,6 +18,11 @@ public class RabbitMQConfig {
     // NEW
     public static final String DUE_QUEUE = "due.notification.queue";
     public static final String DUE_ROUTING_KEY = "task.due";
+
+    @Bean
+public RabbitAdmin rabbitAdmin(org.springframework.amqp.rabbit.connection.ConnectionFactory connectionFactory) {
+    return new RabbitAdmin(connectionFactory);
+}
 
     @Bean
     public Queue taskQueue() {
