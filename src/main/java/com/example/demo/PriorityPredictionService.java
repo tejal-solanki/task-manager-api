@@ -1,6 +1,8 @@
 package com.example.demo;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -19,8 +21,13 @@ public class PriorityPredictionService {
     private static final String MODEL_URL =
         "https://router.huggingface.co/hf-inference/models/facebook/bart-large-mnli";
 
+    //     private static final String MODEL_URL =
+    // "https://router.huggingface.co/BROKEN/models/facebook/bart-large-mnli";
+
     private final ObjectMapper mapper = new ObjectMapper();
 
+    @CircuitBreaker(name = "huggingface", fallbackMethod = "fallbackPriority")
+    @Retry(name = "huggingface")
     public String predictPriority(String title, String description) {
         try {
             URL url = new URL(MODEL_URL);
@@ -48,23 +55,27 @@ public class PriorityPredictionService {
 
             System.out.println("[AI] HuggingFace response (" + status + "): " + responseBody);
 
-           if (status == 200) {
-    // Response is an array, not a map
-    List<Map<String, Object>> results = mapper.readValue(responseBody, List.class);
-    if (results != null && !results.isEmpty()) {
-        // First item has highest score — already sorted by confidence
-        String topLabel = (String) results.get(0).get("label");
-        System.out.println("[AI] Top label: " + topLabel);
-        if (topLabel.contains("high")) return "HIGH";
-        if (topLabel.contains("low")) return "LOW";
-        return "MEDIUM";
-    }
-}
-            
+            if (status == 200) {
+                List<Map<String, Object>> results = mapper.readValue(responseBody, List.class);
+                if (results != null && !results.isEmpty()) {
+                    String topLabel = (String) results.get(0).get("label");
+                    System.out.println("[AI] Top label: " + topLabel);
+                    if (topLabel.contains("high")) return "HIGH";
+                    if (topLabel.contains("low")) return "LOW";
+                    return "MEDIUM";
+                }
+            }
+            throw new RuntimeException("HuggingFace returned status: " + status);
 
         } catch (Exception e) {
-            System.out.println("[AI] Priority prediction failed: " + e.getMessage());
+            System.out.println("[AI] Prediction attempt failed: " + e.getMessage());
+            throw new RuntimeException(e);
         }
+    }
+
+    // Fallback — called when circuit is open or all retries exhausted
+    public String fallbackPriority(String title, String description, Exception e) {
+        System.out.println("[AI] Fallback triggered — defaulting to MEDIUM. Reason: " + e.getMessage());
         return "MEDIUM";
     }
 }
