@@ -42,11 +42,14 @@ public class JwtFilter extends OncePerRequestFilter {
             String username = jwtUtil.extractUsername(token);
 
             appUserRepository.findByUsername(username).ifPresent(user -> {
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(
-                                user.getUsername(), null, Collections.emptyList());
-                SecurityContextHolder.getContext().setAuthentication(authToken);
-            });
+    UsernamePasswordAuthenticationToken authToken =
+            new UsernamePasswordAuthenticationToken(
+                    user.getUsername(), null,
+                    java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority(
+                            user.getRole() != null ? user.getRole().name() : "ROLE_USER"
+                    )));
+    SecurityContextHolder.getContext().setAuthentication(authToken);
+});
         }
 
         filterChain.doFilter(request, response);

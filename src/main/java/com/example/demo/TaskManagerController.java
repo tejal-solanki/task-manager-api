@@ -25,6 +25,19 @@ public class TaskManagerController {
     public TaskManagerController(TaskManagerService taskManagerService) {
         this.taskManagerService = taskManagerService;
     }
+    @Autowired
+private AppUserRepository appUserRepository;
+
+@PutMapping("/admin/users/{username}/role")
+public ResponseEntity<String> updateUserRole(
+        @PathVariable String username,
+        @RequestParam String role) {
+    AppUser user = appUserRepository.findByUsername(username)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+    user.setRole(Role.valueOf(role));
+    appUserRepository.save(user);
+    return ResponseEntity.ok("Role updated to " + role);
+}
 
     @GetMapping
     public Page<TaskManager> getAllTask(

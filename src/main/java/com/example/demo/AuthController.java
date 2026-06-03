@@ -29,13 +29,6 @@ public class AuthController {
         this.passwordEncoder = passwordEncoder;
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody AppUser user) {
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        appUserRepository.save(user);
-        return ResponseEntity.ok("User registered successfully");
-    }
-
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody AppUser user) {
         Authentication auth = authenticationManager.authenticate(
@@ -45,4 +38,13 @@ public class AuthController {
         String token = jwtUtil.generateTokens(auth.getName());
         return ResponseEntity.ok(token);
     }
+    @PostMapping("/register")
+public ResponseEntity<String> register(@RequestBody AppUser user) {
+    if (user.getRole() == null) {
+        user.setRole(Role.ROLE_USER);
+    }
+    user.setPassword(passwordEncoder.encode(user.getPassword()));
+    appUserRepository.save(user);
+    return ResponseEntity.ok("User registered successfully");
+}
 }
