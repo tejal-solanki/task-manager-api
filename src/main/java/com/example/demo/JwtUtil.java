@@ -17,10 +17,18 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(SECRET.getBytes());
     }
 
-    public String generateTokens(String username) {
-        return Jwts.builder().subject(username).issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + EXPIRY)).signWith(getSigninKey()).compact();
-    }
+public String generateTokens(String username, String role) {
+    return Jwts.builder()
+            .subject(username)
+            .claim("role", role)
+            .issuedAt(new Date())
+            .expiration(new Date(System.currentTimeMillis() + EXPIRY))
+            .signWith(getSigninKey())
+            .compact();
+}
+public String extractRole(String token) {
+    return (String) getClaims(token).get("role");
+}
 
     public String extractUsername(String token) {
         return getClaims(token).getSubject();

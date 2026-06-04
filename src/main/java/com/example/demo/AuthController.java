@@ -29,15 +29,19 @@ public class AuthController {
         this.passwordEncoder = passwordEncoder;
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody AppUser user) {
-        Authentication auth = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        user.getUsername(), user.getPassword()));
+@PostMapping("/login")
+public ResponseEntity<String> login(@RequestBody AppUser user) {
+    Authentication auth = authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(
+                    user.getUsername(), user.getPassword()));
 
-        String token = jwtUtil.generateTokens(auth.getName());
-        return ResponseEntity.ok(token);
-    }
+    AppUser dbUser = appUserRepository.findByUsername(auth.getName())
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+    String role = dbUser.getRole() != null ? dbUser.getRole().name() : "ROLE_USER";
+    String token = jwtUtil.generateTokens(auth.getName(), role);
+    return ResponseEntity.ok(token);
+}
     @PostMapping("/register")
 public ResponseEntity<String> register(@RequestBody AppUser user) {
     if (user.getRole() == null) {

@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaskFlow — Smart Task Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3d;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --accent3: #43e97b;
+    --text: #e8e8f0;
+    --muted: #7070a0;
+    --high: #ff6584;
+    --medium: #f9ca24;
+    --low: #43e97b;
+    --admin: #6c63ff;
+    --manager: #f9ca24;
+    --user: #43e97b;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -40%;
+    left: -20%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(108,99,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -40%;
+    right: -20%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(255,101,132,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* LOGIN */
+  #login-screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    background: var(--bg);
+  }
+
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 48px 40px;
+    width: 400px;
+    position: relative;
+    animation: slideUp 0.4s ease;
+  }
+
+  .login-card::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: -1px; right: -1px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 16px 16px 0 0;
+  }
+
+  .logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .login-sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 32px;
+    font-weight: 300;
+  }
+
+  .field-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .field { margin-bottom: 20px; }
+
+  input[type=text], input[type=password] {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input:focus { border-color: var(--accent); }
+
+  .btn-primary {
+    width: 100%;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    padding: 13px;
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    letter-spacing: 0.3px;
+  }
+
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:active { transform: scale(0.99); }
+
+  .login-hint {
+    margin-top: 20px;
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.8;
+  }
+
+  .login-hint code {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+  }
+
+  .error-msg {
+    background: rgba(255,101,132,0.1);
+    border: 1px solid rgba(255,101,132,0.3);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--accent2);
+    margin-bottom: 16px;
+    display: none;
+  }
+
+  /* APP */
+  #app-screen { display: none; }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+    height: 60px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .topbar-logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  .topbar-logo span { color: var(--accent); }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .role-badge {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+  }
+
+  .role-ROLE_ADMIN { color: var(--admin); border-color: rgba(108,99,255,0.4); background: rgba(108,99,255,0.1); }
+  .role-ROLE_MANAGER { color: var(--manager); border-color: rgba(249,202,36,0.4); background: rgba(249,202,36,0.1); }
+  .role-ROLE_USER { color: var(--user); border-color: rgba(67,233,123,0.4); background: rgba(67,233,123,0.1); }
+
+  .user-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: white;
+  }
+
+  .btn-logout {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 14px;
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .btn-logout:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .main {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 32px 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+
+  .page-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -1px;
+  }
+
+  .page-title span { color: var(--accent); }
+
+  .task-count {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .btn-new {
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    padding: 11px 20px;
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-new:hover { opacity: 0.85; }
+
+  /* NOTIFICATION BAR */
+  #notif-bar {
+    background: rgba(67,233,123,0.1);
+    border: 1px solid rgba(67,233,123,0.3);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: var(--accent3);
+    display: none;
+    align-items: center;
+    gap: 10px;
+    animation: pulse 2s infinite;
+  }
+
+  .notif-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent3);
+    flex-shrink: 0;
+    animation: blink 1s infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* CREATE FORM */
+  #create-form {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    display: none;
+    animation: slideDown 0.3s ease;
+  }
+
+  .form-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .form-field { display: flex; flex-direction: column; gap: 6px; }
+
+  .form-field.full { grid-column: 1 / -1; }
+
+  select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  select:focus { border-color: var(--accent); }
+
+  input[type=date] {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    color-scheme: dark;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+
+  .btn-cancel {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 18px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-cancel:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .btn-submit {
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .btn-submit:hover { opacity: 0.85; }
+
+  /* TASKS LIST */
+  .tasks-container { display: flex; flex-direction: column; gap: 10px; }
+
+  .task-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: border-color 0.2s, transform 0.15s;
+    animation: fadeIn 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .task-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    border-radius: 3px 0 0 3px;
+  }
+
+  .task-card.priority-HIGH::before { background: var(--high); }
+  .task-card.priority-MEDIUM::before { background: var(--medium); }
+  .task-card.priority-LOW::before { background: var(--low); }
+
+  .task-card:hover { border-color: rgba(108,99,255,0.4); transform: translateX(2px); }
+
+  .task-id {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    min-width: 32px;
+  }
+
+  .task-info { flex: 1; min-width: 0; }
+
+  .task-title {
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .task-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .task-desc {
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+  }
+
+  .tag {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 20px;
+    border: 1px solid;
+  }
+
+  .tag-HIGH { color: var(--high); border-color: rgba(255,101,132,0.4); background: rgba(255,101,132,0.1); }
+  .tag-MEDIUM { color: var(--medium); border-color: rgba(249,202,36,0.4); background: rgba(249,202,36,0.1); }
+  .tag-LOW { color: var(--low); border-color: rgba(67,233,123,0.4); background: rgba(67,233,123,0.1); }
+  .tag-TODO { color: var(--muted); border-color: var(--border); background: var(--surface2); }
+  .tag-IN_PROGRESS { color: var(--accent); border-color: rgba(108,99,255,0.4); background: rgba(108,99,255,0.1); }
+  .tag-DONE { color: var(--accent3); border-color: rgba(67,233,123,0.4); background: rgba(67,233,123,0.1); }
+
+  .due-date {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .task-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+  .btn-icon {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+  }
+
+  .btn-icon:hover { border-color: var(--accent2); background: rgba(255,101,132,0.1); }
+
+  .btn-icon.delete:hover { border-color: var(--accent2); }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+
+  .empty-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-text { font-size: 15px; margin-bottom: 8px; }
+  .empty-sub { font-size: 13px; opacity: 0.6; }
+
+  .loading {
+    text-align: center;
+    padding: 40px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-right: 10px;
+    vertical-align: middle;
+  }
+
+  /* WS STATUS */
+  .ws-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .ws-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+
+  .ws-dot.connected { background: var(--accent3); animation: blink 2s infinite; }
+
+  /* PAGINATION */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 24px;
+  }
+
+  .page-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 14px;
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .page-btn:hover { border-color: var(--accent); color: var(--text); }
+  .page-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(108,99,255,0.1); }
+  .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateX(-6px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(67,233,123,0.2); }
+    50% { box-shadow: 0 0 0 6px rgba(67,233,123,0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="logo">Task<span>Flow</span></div>
+    <div class="login-sub">AI-powered task management</div>
+    <div class="error-msg" id="login-error"></div>
+    <div class="field">
+      <div class="field-label">Username</div>
+      <input type="text" id="username" placeholder="Enter username" autocomplete="off">
+    </div>
+    <div class="field">
+      <div class="field-label">Password</div>
+      <input type="password" id="password" placeholder="Enter password">
+    </div>
+    <button class="btn-primary" onclick="login()">Sign In →</button>
+    <div class="login-hint">
+      Register via API with role:<br>
+      <code>ROLE_ADMIN</code> &nbsp;|&nbsp; <code>ROLE_MANAGER</code> &nbsp;|&nbsp; <code>ROLE_USER</code>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen">
+  <div class="topbar">
+    <div class="topbar-logo">Task<span>Flow</span></div>
+    <div class="topbar-right">
+      <div class="ws-status">
+        <div class="ws-dot" id="ws-dot"></div>
+        <span id="ws-label">connecting</span>
+      </div>
+      <span class="role-badge" id="role-badge"></span>
+      <div class="user-chip">
+        <div class="avatar" id="avatar-initials">?</div>
+        <span id="username-display"></span>
+      </div>
+      <button class="btn-logout" onclick="logout()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div id="notif-bar">
+      <div class="notif-dot"></div>
+      <span id="notif-text"></span>
+    </div>
+
+    <div class="page-header">
+      <div>
+        <div class="page-title">My <span>Tasks</span></div>
+        <div class="task-count" id="task-count">Loading...</div>
+      </div>
+      <button class="btn-new" onclick="toggleForm()">＋ New Task</button>
+    </div>
+
+    <div id="create-form">
+      <div class="form-title">// CREATE_TASK</div>
+      <div class="form-grid">
+        <div class="form-field full">
+          <div class="field-label">Title</div>
+          <input type="text" id="f-title" placeholder="Task title...">
+        </div>
+        <div class="form-field full">
+          <div class="field-label">Description</div>
+          <input type="text" id="f-desc" placeholder="What needs to be done?">
+        </div>
+        <div class="form-field">
+          <div class="field-label">Status</div>
+          <select id="f-status">
+            <option value="TODO">TODO</option>
+            <option value="IN_PROGRESS">IN PROGRESS</option>
+            <option value="DONE">DONE</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <div class="field-label">Due Date</div>
+          <input type="date" id="f-due">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-cancel" onclick="toggleForm()">Cancel</button>
+        <button class="btn-submit" onclick="createTask()">Create Task →</button>
+      </div>
+    </div>
+
+    <div id="tasks-list"><div class="loading"><span class="spinner"></span>Loading tasks...</div></div>
+
+    <div class="pagination" id="pagination"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+<script>
+const API = 'http://localhost:8080';
+let token = null;
+let currentUser = null;
+let currentRole = null;
+let currentPage = 0;
+let totalPages = 0;
+let stompClient = null;
+
+function showError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+async function login() {
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value.trim();
+  if (!username || !password) { showError('Please enter username and password'); return; }
+
+  try {
+    const res = await fetch(`${API}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+
+    if (!res.ok) { showError('Invalid credentials'); return; }
+
+    token = await res.text();
+    currentUser = username;
+
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    currentRole = payload.role || 'ROLE_USER';
+
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'block';
+    document.getElementById('username-display').textContent = username;
+    document.getElementById('avatar-initials').textContent = username[0].toUpperCase();
+
+    const roleBadge = document.getElementById('role-badge');
+    roleBadge.textContent = currentRole.replace('ROLE_', '');
+    roleBadge.className = `role-badge role-${currentRole}`;
+
+    loadTasks();
+    connectWebSocket();
+  } catch(e) {
+    showError('Connection failed — is the server running?');
+  }
+}
+
+async function loadTasks(page = 0) {
+  currentPage = page;
+  const list = document.getElementById('tasks-list');
+  list.innerHTML = '<div class="loading"><span class="spinner"></span>Loading tasks...</div>';
+
+  try {
+    const res = await fetch(`${API}/task?page=${page}&size=8`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (res.status === 403) { list.innerHTML = '<div class="loading">Access denied</div>'; return; }
+
+    const data = await res.json();
+    const tasks = data.content || [];
+    totalPages = data.totalPages || 0;
+
+    document.getElementById('task-count').textContent =
+      `${data.totalElements || 0} task${data.totalElements !== 1 ? 's' : ''} total`;
+
+    if (tasks.length === 0) {
+      list.innerHTML = `<div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <div class="empty-text">No tasks yet</div>
+        <div class="empty-sub">Create your first task to get started</div>
+      </div>`;
+    } else {
+      list.innerHTML = '';
+      const container = document.createElement('div');
+      container.className = 'tasks-container';
+      tasks.forEach(task => container.appendChild(renderTask(task)));
+      list.appendChild(container);
+    }
+
+    renderPagination();
+  } catch(e) {
+    list.innerHTML = '<div class="loading">Failed to load tasks</div>';
+  }
+}
+
+function renderTask(task) {
+  const card = document.createElement('div');
+  card.className = `task-card priority-${task.priority || 'MEDIUM'}`;
+  card.id = `task-${task.id}`;
+
+  const canDelete = currentRole === 'ROLE_ADMIN' || task.createdBy === currentUser;
+  const canUpdate = currentRole === 'ROLE_ADMIN' || currentRole === 'ROLE_MANAGER';
+
+  card.innerHTML = `
+    <div class="task-id">#${task.id}</div>
+    <div class="task-info">
+      <div class="task-title">${escHtml(task.title)}</div>
+      <div class="task-meta">
+        ${task.description ? `<span class="task-desc">${escHtml(task.description)}</span>` : ''}
+        <span class="tag tag-${task.priority || 'MEDIUM'}">${task.priority || 'MEDIUM'}</span>
+        <span class="tag tag-${task.status}">${(task.status || '').replace('_', ' ')}</span>
+        ${task.dueDate ? `<span class="due-date">📅 ${task.dueDate}</span>` : ''}
+      </div>
+    </div>
+    <div class="task-actions">
+      ${canUpdate ? `<button class="btn-icon" onclick="promptUpdate(${task.id}, '${escHtml(task.title)}')" title="Update status">✏️</button>` : ''}
+      ${canDelete ? `<button class="btn-icon delete" onclick="deleteTask(${task.id})" title="Delete task">🗑️</button>` : ''}
+    </div>
+  `;
+  return card;
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function createTask() {
+  const title = document.getElementById('f-title').value.trim();
+  const desc = document.getElementById('f-desc').value.trim();
+  const status = document.getElementById('f-status').value;
+  const due = document.getElementById('f-due').value;
+
+  if (!title) { alert('Title is required'); return; }
+
+  const today = new Date().toISOString().split('T')[0];
+
+  try {
+    const res = await fetch(`${API}/task`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        title,
+        description: desc,
+        status,
+        createdAt: today,
+        dueDate: due || today
+      })
+    });
+
+    if (res.ok) {
+      const task = await res.json();
+      toggleForm();
+      document.getElementById('f-title').value = '';
+      document.getElementById('f-desc').value = '';
+      document.getElementById('f-due').value = '';
+      loadTasks(currentPage);
+    } else {
+      alert('Failed to create task');
+    }
+  } catch(e) {
+    alert('Error creating task');
+  }
+}
+
+async function deleteTask(id) {
+  if (!confirm(`Delete task #${id}?`)) return;
+  try {
+    const res = await fetch(`${API}/task/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok || res.status === 200) {
+      const card = document.getElementById(`task-${id}`);
+      if (card) { card.style.opacity = '0'; card.style.transform = 'translateX(20px)'; card.style.transition = '0.3s'; setTimeout(() => loadTasks(currentPage), 300); }
+    } else {
+      alert('Delete failed — check your role permissions');
+    }
+  } catch(e) { alert('Error deleting task'); }
+}
+
+async function promptUpdate(id, title) {
+  const statuses = ['TODO', 'IN_PROGRESS', 'DONE'];
+  const chosen = prompt(`Update status for "${title}":\nTODO / IN_PROGRESS / DONE`);
+  if (!chosen || !statuses.includes(chosen.toUpperCase())) return;
+
+  try {
+    const res = await fetch(`${API}/task/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ status: chosen.toUpperCase() })
+    });
+    if (res.ok) loadTasks(currentPage);
+    else alert('Update failed');
+  } catch(e) { alert('Error updating task'); }
+}
+
+function renderPagination() {
+  const el = document.getElementById('pagination');
+  el.innerHTML = '';
+  if (totalPages <= 1) return;
+
+  const prev = document.createElement('button');
+  prev.className = 'page-btn';
+  prev.textContent = '← Prev';
+  prev.disabled = currentPage === 0;
+  prev.onclick = () => loadTasks(currentPage - 1);
+  el.appendChild(prev);
+
+  for (let i = 0; i < totalPages; i++) {
+    const btn = document.createElement('button');
+    btn.className = `page-btn${i === currentPage ? ' active' : ''}`;
+    btn.textContent = i + 1;
+    btn.onclick = () => loadTasks(i);
+    el.appendChild(btn);
+  }
+
+  const next = document.createElement('button');
+  next.className = 'page-btn';
+  next.textContent = 'Next →';
+  next.disabled = currentPage >= totalPages - 1;
+  next.onclick = () => loadTasks(currentPage + 1);
+  el.appendChild(next);
+}
+
+function toggleForm() {
+  const form = document.getElementById('create-form');
+  form.style.display = form.style.display === 'block' ? 'none' : 'block';
+}
+
+function connectWebSocket() {
+  try {
+    const socket = new SockJS(`${API}/ws`);
+    stompClient = Stomp.over(socket);
+    stompClient.debug = null;
+
+    stompClient.connect({}, () => {
+      document.getElementById('ws-dot').className = 'ws-dot connected';
+      document.getElementById('ws-label').textContent = 'live';
+
+      stompClient.subscribe('/topic/due-notifications', (msg) => {
+        const bar = document.getElementById('notif-bar');
+        document.getElementById('notif-text').textContent = msg.body;
+        bar.style.display = 'flex';
+        setTimeout(() => { bar.style.display = 'none'; }, 8000);
+      });
+    }, () => {
+      document.getElementById('ws-dot').className = 'ws-dot';
+      document.getElementById('ws-label').textContent = 'offline';
+    });
+  } catch(e) {}
+}
+
+function logout() {
+  token = null; currentUser = null; currentRole = null;
+  if (stompClient) { try { stompClient.disconnect(); } catch(e) {} }
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('username').value = '';
+  document.getElementById('password').value = '';
+  document.getElementById('login-error').style.display = 'none';
+}
+
+document.getElementById('password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') login();
+});
+</script>
+</body>
+</html>

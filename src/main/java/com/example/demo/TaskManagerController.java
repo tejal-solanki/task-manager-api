@@ -52,14 +52,22 @@ public ResponseEntity<String> updateUserRole(
     }
 
     @PostMapping
-    public ResponseEntity<TaskManager> addNewTask(@Valid @RequestBody TaskManager taskManager) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(taskManagerService.addNewTask(taskManager));
-    }
+public ResponseEntity<TaskManager> addNewTask(@Valid @RequestBody TaskManager taskManager) {
+    String username = org.springframework.security.core.context.SecurityContextHolder
+            .getContext().getAuthentication().getName();
+    return ResponseEntity.status(HttpStatus.CREATED)
+            .body(taskManagerService.addNewTask(taskManager, username));
+}
 
-    @DeleteMapping("/{id}")
-    public void deleteTask(@PathVariable("id") Long id) {
-        taskManagerService.deleteTask(id);
-    }
+   @DeleteMapping("/{id}")
+public ResponseEntity<Void> deleteTask(@PathVariable("id") Long id) {
+    var auth = org.springframework.security.core.context.SecurityContextHolder
+            .getContext().getAuthentication();
+    String username = auth.getName();
+    String role = auth.getAuthorities().iterator().next().getAuthority();
+    taskManagerService.deleteTask(id, username, role);
+    return ResponseEntity.ok().build();
+}
 
     @PutMapping("/{id}")
     public TaskManager updateTask(@PathVariable("id") Long id, @RequestBody TaskManager updatedTask) {

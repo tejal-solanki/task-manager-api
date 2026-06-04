@@ -24,6 +24,15 @@ public class TaskManager {
     private LocalDate createdAt;
     private LocalDate dueDate;
     private String priority;
+    private String createdBy;
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
 
     private TaskManager() {
 
@@ -84,6 +93,7 @@ public class TaskManager {
     public void setDueDate(LocalDate dueDate) {
         this.dueDate = dueDate;
     }
+
     public String getPriority() {
         return priority;
     }

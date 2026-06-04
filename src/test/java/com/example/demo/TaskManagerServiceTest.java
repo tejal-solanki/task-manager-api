@@ -26,10 +26,11 @@ class TaskManagerServiceTest {
 
     @Test
     void addNewTask_shouldSaveAndReturnTask() {
-        TaskManager input = new TaskManager("Test task", "Desc", TaskStatus.TODO, LocalDate.now(), LocalDate.now().plusDays(3));
+        TaskManager input = new TaskManager("Test task", "Desc", TaskStatus.TODO, LocalDate.now(),
+                LocalDate.now().plusDays(3));
         when(taskManagerRepository.save(input)).thenReturn(input);
 
-        TaskManager result = taskManagerService.addNewTask(input);
+        TaskManager result = taskManagerService.addNewTask(input, "testuser");
 
         assertEquals("Test task", result.getTitle());
         verify(taskManagerRepository, times(1)).save(input);

@@ -13,8 +13,8 @@ public class TaskManagerService {
     private final PriorityPredictionService priorityPredictionService;
 
     public TaskManagerService(TaskManagerRepository taskManagerRepository,
-                               TaskMessagePublisher taskMessagePublisher,
-                               PriorityPredictionService priorityPredictionService) {
+            TaskMessagePublisher taskMessagePublisher,
+            PriorityPredictionService priorityPredictionService) {
         this.taskManagerRepository = taskManagerRepository;
         this.taskMessagePublisher = taskMessagePublisher;
         this.priorityPredictionService = priorityPredictionService;
@@ -25,25 +25,21 @@ public class TaskManagerService {
         return taskManagerRepository.findAll(pageable);
     }
 
-    public TaskManager addNewTask(TaskManager taskManager) {
-        // AI priority prediction
+    public TaskManager addNewTask(TaskManager taskManager, String username) {
         String predicted = priorityPredictionService.predictPriority(
-            taskManager.getTitle(),
-            taskManager.getDescription() != null ? taskManager.getDescription() : ""
-        );
+                taskManager.getTitle(),
+                taskManager.getDescription() != null ? taskManager.getDescription() : "");
         taskManager.setPriority(predicted);
+        taskManager.setCreatedBy(username);
         System.out.println("[AI] Predicted priority: " + predicted + " for task: " + taskManager.getTitle());
 
         TaskManager saved = taskManagerRepository.save(taskManager);
 
-        // Publish to RabbitMQ
         taskMessagePublisher.publishTaskCreated("Task created: " + saved.getTitle());
 
-        // If HIGH priority — publish urgent notification
         if ("HIGH".equals(predicted)) {
             taskMessagePublisher.publishUrgentTask(
-                "URGENT: High priority task created — " + saved.getTitle()
-            );
+                    "URGENT: High priority task created — " + saved.getTitle());
         }
 
         return saved;
@@ -80,5 +76,20 @@ public class TaskManagerService {
         if (updatedTask.getDescription() != null)
             task.setDescription(updatedTask.getDescription());
         return taskManagerRepository.save(task);
+    }
+
+    public void deleteTask(Long id, String username, String role) {
+        TaskManager task = taskManagerRepository.findById(id)
+                .orElseThrow(() -> new TaskNotFoundException("Task with id " + id + " not found"));
+
+        boolean isAdmin = "ROLE_ADMIN".equals(role);
+        boolean isOwner = username.equals(task.getCreatedBy());
+
+        if (!isAdmin && !isOwner) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "You can only delete your own tasks");
+        }
+
+        taskManagerRepository.deleteById(id);
     }
 }
