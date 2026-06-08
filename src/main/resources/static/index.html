@@ -386,7 +386,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);heigh
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 <script>
-const API = 'https://task-manager-api-production-cb25.up.railway.app';
+const API = window.location.hostname === 'localhost' 
+  ? 'http://localhost:8080' 
+  : 'https://task-manager-api-production-cb25.up.railway.app';
 let token=null,currentUser=null,currentRole=null,stompClient=null;
 let allTasks=[],filteredTasks=[],activeFilter='ALL';
 let draggedId=null,openTaskId=null;
@@ -582,20 +584,50 @@ function renderPanelBody(task){
       </div>
     </div>
   `;
+  loadComments(task.id);
 }
 
-function addComment(taskId){
-  const input=document.getElementById(`comment-input-${taskId}`);
-  const text=input.value.trim();
+async function addComment(taskId){
+  const ta=document.getElementById(`comment-input-${taskId}`);
+  const text=ta.value.trim();
   if(!text)return;
-  if(!comments[taskId])comments[taskId]=[];
-  comments[taskId].push({author:currentUser,text,time:'just now'});
-  input.value='';
-  const task=allTasks.find(t=>t.id===taskId);
-  if(task)renderPanelBody(task);
-  const card=document.getElementById(`card-${taskId}`);
-  if(card)card.querySelector('.card-footer').innerHTML=card.querySelector('.card-footer').innerHTML;
-  renderBoard();
+  ta.value='';
+  try {
+    const res = await fetch(`${API}/task/${taskId}/comments`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+      body: JSON.stringify({content: text})
+    });
+    if(res.ok){
+      await loadComments(taskId);
+    }
+  } catch(e){ console.error('Comment failed',e); }
+}
+
+async function loadComments(taskId){
+  try {
+    const res = await fetch(`${API}/task/${taskId}/comments`, {
+      headers:{'Authorization':`Bearer ${token}`}
+    });
+    if(!res.ok) return;
+    const data = await res.json();
+    const list = document.getElementById(`comments-list-${taskId}`);
+    const badge = document.getElementById(`comment-count-${taskId}`);
+    if(badge) badge.textContent = data.length;
+    if(list){
+      list.innerHTML = data.map(c=>`
+        <div class="comment-item">
+          <div class="comment-avatar">${c.author[0].toUpperCase()}</div>
+          <div class="comment-content">
+            <div class="comment-meta">
+              <span class="comment-author">${c.author}</span>
+              <span class="comment-time">${new Date(c.createdAt).toLocaleString()}</span>
+            </div>
+            <div class="comment-text">${c.content}</div>
+          </div>
+        </div>`).join('');
+    }
+  } catch(e){ console.error('Load comments failed',e); }
 }
 
 function closePanel(){document.getElementById('detail-panel').style.display='none';openTaskId=null;}

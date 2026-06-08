@@ -14,8 +14,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import java.util.Collections;
-
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -69,7 +67,10 @@ public class SecurityConfig {
                         .hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
                         .requestMatchers(org.springframework.http.HttpMethod.PUT, "/task/**")
                         .hasAnyAuthority("ROLE_ADMIN", "ROLE_MANAGER")
+                        .requestMatchers("/task/*/comments").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN", "ROLE_MANAGER")
                         .requestMatchers("/task/admin/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/task/*/comments", "/task/*/comments/**")
+                        .hasAnyAuthority("ROLE_USER", "ROLE_ADMIN", "ROLE_MANAGER")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
