@@ -2,6 +2,7 @@ package com.example.demo;
 
 import java.time.LocalDate;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -37,6 +38,17 @@ public class TaskManager {
     private TaskManager() {
 
     }
+
+    // @Column(columnDefinition = "vector(384)")
+    // private String embedding;
+
+    // public String getEmbedding() {
+    //     return embedding;
+    // }
+
+    // public void setEmbedding(String embedding) {
+    //     this.embedding = embedding;
+    // }
 
     public TaskManager(String title, String description, TaskStatus status, LocalDate createdAt, LocalDate dueDate) {
         this.title = title;

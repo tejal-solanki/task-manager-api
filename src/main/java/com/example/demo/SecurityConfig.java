@@ -71,6 +71,8 @@ public class SecurityConfig {
                         .requestMatchers("/task/admin/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/task/*/comments", "/task/*/comments/**")
                         .hasAnyAuthority("ROLE_USER", "ROLE_ADMIN", "ROLE_MANAGER")
+                        .requestMatchers("/task/similar").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN", "ROLE_MANAGER")
+                        .requestMatchers("/task/suggest-description").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN", "ROLE_MANAGER")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 

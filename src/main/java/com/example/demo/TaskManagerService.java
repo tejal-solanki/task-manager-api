@@ -31,9 +31,25 @@ public class TaskManagerService {
                 taskManager.getDescription() != null ? taskManager.getDescription() : "");
         taskManager.setPriority(predicted);
         taskManager.setCreatedBy(username);
-        System.out.println("[AI] Predicted priority: " + predicted + " for task: " + taskManager.getTitle());
 
         TaskManager saved = taskManagerRepository.save(taskManager);
+
+        // Generate and store embedding asynchronously
+        new Thread(() -> {
+            try {
+                double[] embedding = priorityPredictionService.generateEmbedding(
+                        saved.getTitle() + " " + (saved.getDescription() != null ? saved.getDescription() : ""));
+                if (embedding != null) {
+                    String vectorStr = "[" + java.util.Arrays.stream(embedding)
+                            .mapToObj(String::valueOf)
+                            .collect(java.util.stream.Collectors.joining(",")) + "]";
+                    taskManagerRepository.updateEmbedding(saved.getId(), vectorStr);
+                    System.out.println("[AI] Embedding stored for task: " + saved.getTitle());
+                }
+            } catch (Exception e) {
+                System.out.println("[AI] Embedding storage failed: " + e.getMessage());
+            }
+        }).start();
 
         taskMessagePublisher.publishTaskCreated("Task created: " + saved.getTitle());
 

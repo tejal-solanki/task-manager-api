@@ -363,6 +363,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);heigh
     <div class="create-top">
       <input class="create-title-input" id="c-title" placeholder="Issue title" autocomplete="off">
       <textarea class="create-desc-input" id="c-desc" placeholder="Add description..." rows="2"></textarea>
+      <div id="similar-issues" style="display:none;margin-top:8px;border-top:1px solid var(--border);padding-top:8px;">
+        <div style="font-size:10px;font-weight:500;color:var(--text3);margin-bottom:6px;display:flex;align-items:center;gap:4px;">🔍 Similar issues found</div>
+        <div id="similar-list"></div>
+      </div>
     </div>
     <div class="create-divider"></div>
     <div class="create-bottom">
@@ -651,8 +655,66 @@ function openCreateModal(defaultStatus){
   document.getElementById('c-desc').value='';
   document.getElementById('create-modal').style.display='flex';
   setTimeout(()=>document.getElementById('c-title').focus(),100);
+  document.getElementById('c-title').value='';
+  document.getElementById('c-desc').value='';
 }
-function closeCreateModal(e){if(!e||e.target===document.getElementById('create-modal'))document.getElementById('create-modal').style.display='none';}
+// AI auto-suggest description
+let suggestTimer = null;
+const titleInput = document.getElementById('c-title');
+const descInput = document.getElementById('c-desc');
+
+titleInput.addEventListener('input', () => {
+  clearTimeout(suggestTimer);
+  const val = titleInput.value.trim();
+  document.getElementById('similar-issues').style.display = 'none';
+  if(val.length < 4) return;
+  suggestTimer = setTimeout(async () => {
+    descInput.placeholder = '✨ AI suggesting...';
+
+    // Run suggest and similar in parallel
+    const [suggestRes, similarRes] = await Promise.allSettled([
+      fetch(`${API}/task/suggest-description`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+        body: JSON.stringify({title: val})
+      }),
+      fetch(`${API}/task/similar`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+        body: JSON.stringify({title: val})
+      })
+    ]);
+
+    // Handle suggestion
+    if(suggestRes.status === 'fulfilled' && suggestRes.value.ok){
+      const data = await suggestRes.value.json();
+      if(data.suggestion && !descInput.value){
+        descInput.value = data.suggestion;
+      }
+    }
+    descInput.placeholder = 'Add description...';
+
+    // Handle similar issues
+    if(similarRes.status === 'fulfilled' && similarRes.value.ok){
+      const similar = await similarRes.value.json();
+      if(similar && similar.length > 0){
+        const container = document.getElementById('similar-issues');
+        const list = document.getElementById('similar-list');
+        list.innerHTML = similar.map(t => `
+          <div style="display:flex;align-items:center;gap:6px;padding:4px 0;cursor:pointer;border-radius:4px;" 
+               onclick="document.getElementById('create-modal').style.display='none';openDetail(${t.id})">
+            <span style="font-size:9px;color:var(--text3);font-family:monospace;">TF-${t.id}</span>
+            <span style="font-size:11px;color:var(--text2);flex:1;">${t.title}</span>
+            <span style="font-size:9px;padding:1px 5px;border-radius:3px;background:var(--surface2);color:var(--text3);">${t.priority||'MEDIUM'}</span>
+          </div>`).join('');
+        container.style.display = 'block';
+      }
+    }
+  }, 1000);
+});
+
+function closeCreateModal(e){if(!e||e.target===document.getElementById('create-modal'))document.getElementById('create-modal').style.display='none'; document.getElementById('similar-issues').style.display = 'none';
+document.getElementById('similar-list').innerHTML = '';}
 
 async function createTask(){
   const title=document.getElementById('c-title').value.trim();

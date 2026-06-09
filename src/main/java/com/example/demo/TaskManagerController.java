@@ -1,5 +1,8 @@
 package com.example.demo;
 
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -21,23 +24,29 @@ import org.springframework.web.bind.annotation.RestController;
 public class TaskManagerController {
 
     private final TaskManagerService taskManagerService;
+    private final PriorityPredictionService priorityPredictionService;
+    private final TaskManagerRepository taskManagerRepository;
 
-    public TaskManagerController(TaskManagerService taskManagerService) {
+    public TaskManagerController(TaskManagerService taskManagerService,
+            PriorityPredictionService priorityPredictionService, TaskManagerRepository taskManagerRepository) {
         this.taskManagerService = taskManagerService;
+        this.priorityPredictionService = priorityPredictionService;
+        this.taskManagerRepository = taskManagerRepository;
     }
-    @Autowired
-private AppUserRepository appUserRepository;
 
-@PutMapping("/admin/users/{username}/role")
-public ResponseEntity<String> updateUserRole(
-        @PathVariable String username,
-        @RequestParam String role) {
-    AppUser user = appUserRepository.findByUsername(username)
-            .orElseThrow(() -> new RuntimeException("User not found"));
-    user.setRole(Role.valueOf(role));
-    appUserRepository.save(user);
-    return ResponseEntity.ok("Role updated to " + role);
-}
+    @Autowired
+    private AppUserRepository appUserRepository;
+
+    @PutMapping("/admin/users/{username}/role")
+    public ResponseEntity<String> updateUserRole(
+            @PathVariable String username,
+            @RequestParam String role) {
+        AppUser user = appUserRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setRole(Role.valueOf(role));
+        appUserRepository.save(user);
+        return ResponseEntity.ok("Role updated to " + role);
+    }
 
     @GetMapping
     public Page<TaskManager> getAllTask(
@@ -52,22 +61,22 @@ public ResponseEntity<String> updateUserRole(
     }
 
     @PostMapping
-public ResponseEntity<TaskManager> addNewTask(@Valid @RequestBody TaskManager taskManager) {
-    String username = org.springframework.security.core.context.SecurityContextHolder
-            .getContext().getAuthentication().getName();
-    return ResponseEntity.status(HttpStatus.CREATED)
-            .body(taskManagerService.addNewTask(taskManager, username));
-}
+    public ResponseEntity<TaskManager> addNewTask(@Valid @RequestBody TaskManager taskManager) {
+        String username = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication().getName();
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(taskManagerService.addNewTask(taskManager, username));
+    }
 
-   @DeleteMapping("/{id}")
-public ResponseEntity<Void> deleteTask(@PathVariable("id") Long id) {
-    var auth = org.springframework.security.core.context.SecurityContextHolder
-            .getContext().getAuthentication();
-    String username = auth.getName();
-    String role = auth.getAuthorities().iterator().next().getAuthority();
-    taskManagerService.deleteTask(id, username, role);
-    return ResponseEntity.ok().build();
-}
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTask(@PathVariable("id") Long id) {
+        var auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        String username = auth.getName();
+        String role = auth.getAuthorities().iterator().next().getAuthority();
+        taskManagerService.deleteTask(id, username, role);
+        return ResponseEntity.ok().build();
+    }
 
     @PutMapping("/{id}")
     public TaskManager updateTask(@PathVariable("id") Long id, @RequestBody TaskManager updatedTask) {
@@ -86,5 +95,40 @@ public ResponseEntity<Void> deleteTask(@PathVariable("id") Long id) {
     public ResponseEntity<String> triggerDueCheck() {
         dueTaskScheduler.checkDueTasks();
         return ResponseEntity.ok("Scheduler triggered");
+    }
+
+    @PostMapping("/suggest-description")
+    public ResponseEntity<Map<String, String>> suggestDescription(
+            @RequestBody Map<String, String> body) {
+        String title = body.getOrDefault("title", "");
+        String suggestion = priorityPredictionService.suggestDescription(title);
+        return ResponseEntity.ok(Map.of("suggestion", suggestion));
+    }
+
+    @PostMapping("/similar")
+    public ResponseEntity<List<Map<String, Object>>> findSimilar(
+            @RequestBody Map<String, String> body) {
+        String title = body.getOrDefault("title", "");
+        double[] embedding = priorityPredictionService.generateEmbedding(title);
+
+        if (embedding == null)
+            return ResponseEntity.ok(List.of());
+
+        String vectorStr = "[" + java.util.Arrays.stream(embedding)
+                .mapToObj(String::valueOf)
+                .collect(java.util.stream.Collectors.joining(",")) + "]";
+
+        List<TaskManager> similar = taskManagerRepository.findSimilarTasks(vectorStr, -1L);
+
+        List<Map<String, Object>> result = similar.stream().map(t -> {
+            Map<String, Object> m = new java.util.HashMap<>();
+            m.put("id", t.getId());
+            m.put("title", t.getTitle());
+            m.put("status", t.getStatus());
+            m.put("priority", t.getPriority());
+            return m;
+        }).collect(java.util.stream.Collectors.toList());
+
+        return ResponseEntity.ok(result);
     }
 }
